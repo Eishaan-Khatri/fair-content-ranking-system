@@ -1,4 +1,4 @@
-"""Synthetic exposure-log generator for System B."""
+﻿"""Synthetic exposure-log generator for System B."""
 
 from __future__ import annotations
 
@@ -36,9 +36,55 @@ def _normalise_genres(value: object) -> list[str]:
         return [value]
     return []
 
+def _synthetic_item_universe(n_items: int = 3000, seed: int = 42) -> pd.DataFrame:
+    """Create a deterministic standalone item universe when System A artifacts are absent."""
+    rng = np.random.default_rng(seed)
+    genres = np.array(["Fantasy", "Mystery", "Romance", "Sci-Fi", "Literary", "History", "Thriller", "Young Adult"])
+    n_creators = max(100, n_items // 4)
+    creator_idx = rng.integers(0, n_creators, size=n_items)
+    quality = np.clip(rng.beta(3.5, 2.8, size=n_items), 0.02, 0.98)
+    popularity = rng.pareto(1.6, size=n_items) + 0.05
+    popularity = popularity / popularity.max()
+    genre_choice = rng.choice(genres, size=n_items)
+    rows = {
+        "item_id": [f"item_{i:05d}" for i in range(n_items)],
+        "quality_score": quality,
+        "title": [f"Demo Item {i:05d}" for i in range(n_items)],
+        "author_id": [f"creator_{idx:04d}" for idx in creator_idx],
+        "author_name": [f"Creator {idx:04d}" for idx in creator_idx],
+        "creator_id": [f"creator_{idx:04d}" for idx in creator_idx],
+        "creator_name": [f"Creator {idx:04d}" for idx in creator_idx],
+        "genres": [[g] for g in genre_choice],
+        "genres_norm": [[g] for g in genre_choice],
+        "primary_genre": genre_choice,
+        "latent_quality": quality,
+        "rating_count": np.maximum(0, (popularity * 25000).astype(int)),
+        "sessions": np.maximum(1, (popularity * 8000).astype(int)),
+        "users": np.maximum(1, (popularity * 2500).astype(int)),
+        "mean_completion": np.clip(quality + rng.normal(0.0, 0.08, size=n_items), 0.01, 0.99),
+        "completion_events": np.maximum(0, (quality * popularity * 7000).astype(int)),
+        "reread_mean": np.clip(quality * 0.2 + rng.normal(0.0, 0.03, size=n_items), 0.0, 1.0),
+        "true_quality": quality,
+        "base_popularity": np.log1p(np.maximum(1, (popularity * 10000).astype(int))),
+    }
+    item = pd.DataFrame(rows)
+    topic = rng.dirichlet(np.ones(8), size=n_items)
+    for idx in range(8):
+        item[f"tv_{idx}"] = topic[:, idx]
+    item["popularity_percentile"] = item["base_popularity"].rank(pct=True)
+    item["item_index"] = np.arange(len(item))
+    return item
 
 def load_item_universe(limit_items: int | None = None) -> pd.DataFrame:
-    """Load System A artifacts into one item universe for System B."""
+    """Load System A artifacts, or generate a standalone demo universe."""
+    required = [
+        PROCESSED_DIR / "item_fingerprints.parquet",
+        PROCESSED_DIR / "quality_scores.parquet",
+        PROCESSED_DIR / "session_features.parquet",
+    ]
+    if not all(path.exists() for path in required):
+        return _synthetic_item_universe(n_items=limit_items or 3000)
+
     fingerprints = pd.read_parquet(PROCESSED_DIR / "item_fingerprints.parquet")
     quality = pd.read_parquet(PROCESSED_DIR / "quality_scores.parquet")
     sessions = pd.read_parquet(PROCESSED_DIR / "session_features.parquet")
@@ -170,7 +216,7 @@ def simulate_exposure_log(
             )
 
     exposure = pd.DataFrame(records)
-    SYSTEM_B_DIR.mkdir(parents=True, exist_ok=True)
-    items.to_parquet(SYSTEM_B_DIR / "item_universe.parquet", index=False)
-    exposure.to_parquet(SYSTEM_B_DIR / "exposure_log.parquet", index=False)
     return exposure, items
+
+
+

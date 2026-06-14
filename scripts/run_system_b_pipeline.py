@@ -1,4 +1,4 @@
-"""Run System B opportunity intelligence pipeline end-to-end."""
+﻿"""Run System B opportunity intelligence pipeline end-to-end."""
 
 from __future__ import annotations
 
@@ -34,6 +34,7 @@ from system_b_opportunity_lab.fairness.ecosystem_simulation import (
     exposure_fairness_by_policy,
     pareto_frontier,
 )
+from system_b_opportunity_lab.fairness.gini_hhi import gini_coefficient, hhi
 from system_b_opportunity_lab.offline_eval.policy_stress_test import run_ips_stress_test
 from system_b_opportunity_lab.uncertainty_promotion.promotion_policy import uncertainty_aware_score
 from system_b_opportunity_lab.uplift_scoring.uplift_model import t_learner_uplift
@@ -69,11 +70,51 @@ def add_promotion_scores(frame: pd.DataFrame) -> pd.DataFrame:
             relevance=float(row["true_quality"]),
             min_relevance=0.20,
         )
-        for idx, row in out.iterrows()
+        for idx, row in out.reset_index(drop=True).iterrows()
     ]
     finite = np.isfinite(out["promotion_score"])
     out.loc[~finite, "promotion_score"] = -1.0
     return out
+
+
+def build_score_ablation(item_scores: pd.DataFrame, top_k: int = 250) -> pd.DataFrame:
+    """Compare scoring variants using the same candidate pool."""
+    if item_scores.empty:
+        return pd.DataFrame()
+
+    items = item_scores.copy()
+    items["novelty"] = 1.0 - items.get("popularity_percentile", pd.Series(0.5, index=items.index)).fillna(0.5).astype(float)
+    items["tail_item"] = items.get("popularity_percentile", pd.Series(1.0, index=items.index)).fillna(1.0).astype(float) <= 0.30
+    items["posterior_uncertainty"] = items.get("posterior_uncertainty", pd.Series(0.0, index=items.index)).fillna(0.0)
+
+    variants = {
+        "popularity_only": items.get("popularity_percentile", pd.Series(0.0, index=items.index)),
+        "quality_shrinkage_only": items.get("shrunk_mean", pd.Series(0.0, index=items.index)),
+        "breakout_only": items.get("breakout_score", pd.Series(0.0, index=items.index)),
+        "uplift_only": items.get("uplift_score", pd.Series(0.0, index=items.index)),
+        "full_promotion_score": items.get("promotion_score", pd.Series(0.0, index=items.index)),
+    }
+
+    rows: list[dict] = []
+    for name, score in variants.items():
+        selected = items.assign(_variant_score=pd.Series(score, index=items.index).fillna(0.0)).sort_values(
+            "_variant_score", ascending=False
+        ).head(min(top_k, len(items)))
+        creator_counts = selected.groupby("creator_id").size().to_numpy(dtype=float) if "creator_id" in selected else np.array([])
+        rows.append(
+            {
+                "variant": name,
+                "top_k": int(len(selected)),
+                "mean_true_quality": float(selected.get("true_quality", selected["_variant_score"]).mean()),
+                "mean_novelty": float(selected["novelty"].mean()),
+                "tail_item_share": float(selected["tail_item"].mean()),
+                "mean_uncertainty": float(selected["posterior_uncertainty"].mean()),
+                "unique_creators": int(selected["creator_id"].nunique()) if "creator_id" in selected else 0,
+                "creator_gini": gini_coefficient(creator_counts) if len(creator_counts) else 0.0,
+                "creator_hhi": hhi(creator_counts) if len(creator_counts) else 0.0,
+            }
+        )
+    return pd.DataFrame(rows).sort_values(["mean_true_quality", "tail_item_share"], ascending=False).reset_index(drop=True)
 
 
 def run_pipeline(args: argparse.Namespace) -> dict:
@@ -133,6 +174,9 @@ def run_pipeline(args: argparse.Namespace) -> dict:
     predictions["uplift_score"] = predictions["uplift_score"].fillna(0.0)
     predictions = add_promotion_scores(predictions)
 
+    print("[System B] Score ablation...")
+    ablation = build_score_ablation(predictions, top_k=args.pareto_top_k)
+
     print("[System B] Bandit policy comparison...")
     policy_metrics = compare_bandit_policies(
         predictions.sort_values("promotion_score", ascending=False).head(args.bandit_items),
@@ -155,16 +199,20 @@ def run_pipeline(args: argparse.Namespace) -> dict:
         "breakout_predictions": SYSTEM_B_DIR / "breakout_predictions.parquet",
         "uplift_scores": SYSTEM_B_DIR / "uplift_scores.parquet",
         "promotion_scores": SYSTEM_B_DIR / "promotion_scores.parquet",
+        "score_ablation": SYSTEM_B_DIR / "ablation_comparison.parquet",
         "bandit_policy_metrics": SYSTEM_B_DIR / "bandit_policy_metrics.parquet",
         "fairness_metrics": SYSTEM_B_DIR / "fairness_metrics.parquet",
         "pareto_frontier": SYSTEM_B_DIR / "pareto_frontier.parquet",
         "ips_stress_test": SYSTEM_B_DIR / "ips_stress_test.parquet",
     }
+    item_universe.to_parquet(outputs["item_universe"], index=False)
+    exposure_log.to_parquet(outputs["exposure_log"], index=False)
     features.to_parquet(outputs["item_features"], index=False)
     shrink.to_parquet(outputs["shrunk_quality"], index=False)
     predictions[["item_id", "uplift_score"]].to_parquet(outputs["uplift_scores"], index=False)
     predictions.to_parquet(outputs["breakout_predictions"], index=False)
     predictions.to_parquet(outputs["promotion_scores"], index=False)
+    ablation.to_parquet(outputs["score_ablation"], index=False)
     policy_metrics.to_parquet(outputs["bandit_policy_metrics"], index=False)
     logging_fairness.to_parquet(outputs["fairness_metrics"], index=False)
     frontier.to_parquet(outputs["pareto_frontier"], index=False)

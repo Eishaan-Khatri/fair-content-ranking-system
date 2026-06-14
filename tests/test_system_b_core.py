@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 
 import numpy as np
 import pandas as pd
@@ -22,6 +22,7 @@ from system_b_opportunity_lab.uplift_scoring.uplift_model import t_learner_uplif
 from system_b_opportunity_lab.uncertainty_promotion.promotion_policy import (
     uncertainty_aware_score,
 )
+from scripts.run_system_b_pipeline import build_score_ablation
 
 
 class SystemBCoreTests(unittest.TestCase):
@@ -112,6 +113,27 @@ class SystemBCoreTests(unittest.TestCase):
         self.assertIn("uplift_score", out.columns)
         self.assertGreater(out["uplift_score"].mean(), 0.0)
 
+    def test_score_ablation_emits_expected_variants(self):
+        df = pd.DataFrame(
+            {
+                "item_id": ["i1", "i2", "i3", "i4"],
+                "creator_id": ["c1", "c2", "c2", "c3"],
+                "true_quality": [0.9, 0.7, 0.4, 0.6],
+                "popularity_percentile": [0.95, 0.2, 0.5, 0.1],
+                "shrunk_mean": [0.8, 0.6, 0.3, 0.5],
+                "breakout_score": [0.1, 0.9, 0.2, 0.6],
+                "uplift_score": [0.0, 0.2, 0.1, 0.3],
+                "promotion_score": [0.4, 0.9, 0.2, 0.7],
+                "posterior_uncertainty": [0.05, 0.2, 0.1, 0.3],
+            }
+        )
+
+        out = build_score_ablation(df, top_k=2)
+
+        self.assertIn("full_promotion_score", set(out["variant"]))
+        self.assertIn("tail_item_share", out.columns)
+        self.assertTrue((out["top_k"] == 2).all())
 
 if __name__ == "__main__":
     unittest.main()
+
