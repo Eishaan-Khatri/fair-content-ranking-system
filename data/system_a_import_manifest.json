@@ -1,0 +1,41 @@
+{
+  "imported_at": "2026-06-14T03:01:39.400513+00:00",
+  "system_a_path": "D:\\Projects\\narrative-intelligence-platform",
+  "artifacts": [
+    {
+      "file": "item_fingerprints.parquet",
+      "status": "copied",
+      "source": "D:\\Projects\\narrative-intelligence-platform\\data\\processed\\item_fingerprints.parquet",
+      "destination": "D:\\Projects\\fair-content-ranking-system\\data\\processed\\item_fingerprints.parquet",
+      "bytes": 1225042
+    },
+    {
+      "file": "quality_scores.parquet",
+      "status": "copied",
+      "source": "D:\\Projects\\narrative-intelligence-platform\\data\\processed\\quality_scores.parquet",
+      "destination": "D:\\Projects\\fair-content-ranking-system\\data\\processed\\quality_scores.parquet",
+      "bytes": 393620
+    },
+    {
+      "file": "session_features.parquet",
+      "status": "copied",
+      "source": "D:\\Projects\\narrative-intelligence-platform\\data\\processed\\session_features.parquet",
+      "destination": "D:\\Projects\\fair-content-ranking-system\\data\\processed\\session_features.parquet",
+      "bytes": 6664030
+    },
+    {
+      "file": "item_embeddings.parquet",
+      "status": "copied",
+      "source": "D:\\Projects\\narrative-intelligence-platform\\data\\processed\\item_embeddings.parquet",
+      "destination": "D:\\Projects\\fair-content-ranking-system\\data\\processed\\item_embeddings.parquet",
+      "bytes": 3703565
+    },
+    {
+      "file": "catalog.parquet",
+      "status": "copied",
+      "source": "D:\\Projects\\narrative-intelligence-platform\\data\\synthetic\\catalog.parquet",
+      "destination": "D:\\Projects\\fair-content-ranking-system\\data\\synthetic\\catalog.parquet",
+      "bytes": 3203001
+    }
+  ]
+}
