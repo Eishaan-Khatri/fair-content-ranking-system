@@ -1,4 +1,4 @@
-﻿"""Streamlit dashboard for the Fair Content Ranking System.
+"""Streamlit dashboard for the Fair Content Ranking System.
 
 Run with:
     streamlit run dashboards/system_b_demo/app.py
@@ -34,37 +34,88 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-COLORWAY = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626", "#0891b2"]
+COLORWAY = ["#0f766e", "#1d4ed8", "#b45309", "#6d28d9", "#be123c", "#047857"]
 
 st.markdown(
     """
 <style>
-    .stApp { background: #f8fafc; color: #111827; }
-    .block-container { max-width: 1280px; padding-top: 1.4rem; padding-bottom: 2.5rem; }
-    [data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e5e7eb; }
-    h1, h2, h3, h4, p, li, label, .stMarkdown, [data-testid="stMetricLabel"] { color: #111827; }
-    .hero {
-        background: #ffffff;
-        border: 1px solid #dbe3ef;
-        border-radius: 8px;
-        padding: 18px 20px;
-        margin-bottom: 16px;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    :root {
+        --ink: #111827;
+        --muted: #5b6472;
+        --line: #d8dee8;
+        --panel: #ffffff;
+        --page: #f4f6f7;
+        --accent: #0f766e;
+        --blue: #1d4ed8;
+        --warn: #b45309;
     }
-    .hero h1 { margin: 0 0 6px 0; font-size: 2rem; line-height: 1.15; }
-    .hero p { margin: 0; color: #4b5563; max-width: 920px; }
+    .stApp {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(180deg, #eef3f1 0, #f7f8fa 230px, #f7f8fa 100%);
+        color: var(--ink);
+    }
+    .block-container { max-width: 1280px; padding-top: 1.25rem; padding-bottom: 2.5rem; }
+    [data-testid="stSidebar"] { background: #fbfcfd; border-right: 1px solid var(--line); }
+    [data-testid="stSidebar"] * { color: var(--ink) !important; }
+    [data-testid="stSidebar"] small, [data-testid="stSidebar"] .stCaption { color: var(--muted) !important; }
+    h1, h2, h3, h4, p, li, label, .stMarkdown, [data-testid="stMetricLabel"] { color: var(--ink); letter-spacing: 0; }
+    .hero {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 20px 22px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .hero .topline {
+        color: var(--accent);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+    .hero h1 { margin: 0 0 6px 0; font-size: 1.78rem; line-height: 1.15; }
+    .hero p { margin: 0; color: var(--muted); max-width: 940px; }
+    .status-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 10px;
+        margin: 8px 0 16px 0;
+    }
+    .status-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px 13px;
+    }
+    .status-card b {
+        display: block;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: #334155;
+        margin-bottom: 4px;
+    }
+    .status-card span {
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.35;
+    }
     .section-note {
-        background: #eef6ff;
-        border-left: 4px solid #2563eb;
+        background: #fbfcfd;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--accent);
         padding: 12px 14px;
-        border-radius: 6px;
+        border-radius: 8px;
         color: #1f2937;
         margin: 10px 0 16px 0;
     }
     .warning-note {
-        background: #fff7ed;
-        border-left: 4px solid #d97706;
+        background: #fffaf2;
+        border: 1px solid #f1d4a8;
+        border-left: 4px solid var(--warn);
         padding: 12px 14px;
-        border-radius: 6px;
+        border-radius: 8px;
         color: #7c2d12;
         margin: 10px 0 16px 0;
     }
@@ -75,34 +126,37 @@ st.markdown(
         margin: 12px 0 18px 0;
     }
     .method-card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
+        background: var(--panel);
+        border: 1px solid var(--line);
         border-radius: 8px;
         padding: 13px 14px;
     }
-    .method-card b { display: block; margin-bottom: 4px; color: #111827; }
-    .method-card span { color: #4b5563; font-size: 0.94rem; }
+    .method-card b { display: block; margin-bottom: 4px; color: var(--ink); }
+    .method-card span { color: var(--muted); font-size: 0.94rem; line-height: 1.38; }
     .term {
-        border-bottom: 1px dotted #2563eb;
-        color: #1d4ed8;
+        border-bottom: 1px dotted var(--blue);
+        color: #1e40af;
         cursor: help;
-        font-weight: 650;
+        font-weight: 700;
     }
     div[data-testid="stMetric"] {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
+        background: var(--panel);
+        border: 1px solid var(--line);
         border-radius: 8px;
         padding: 12px 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
     }
-    div[data-testid="stMetricValue"] { color: #111827; }
-    .small-muted { color: #6b7280; font-size: 0.9rem; }
+    div[data-testid="stMetric"] label { color: #475569 !important; font-weight: 700; }
+    div[data-testid="stMetricValue"] { color: #0f172a; font-weight: 800; }
+    .small-muted { color: var(--muted); font-size: 0.9rem; }
     .footer-note {
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid var(--line);
         padding-top: 14px;
-        color: #4b5563;
+        color: var(--muted);
         font-size: 0.92rem;
         margin-top: 24px;
     }
+    div[data-testid="stDataFrame"] { border: 1px solid var(--line); border-radius: 8px; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -128,6 +182,20 @@ def load_summary() -> dict:
 def term(label: str, definition: str) -> str:
     safe_definition = definition.replace('"', "'")
     return f'<span class="term" title="{safe_definition}">{label}</span>'
+
+
+def render_status_strip() -> None:
+    st.markdown(
+        """
+<div class="status-strip">
+  <div class="status-card"><b>Question</b><span>Which underexposed items should get measured exploration traffic?</span></div>
+  <div class="status-card"><b>Evidence</b><span>Shrinkage, ablation, bandit, concentration, and IPS tables.</span></div>
+  <div class="status-card"><b>Data</b><span>Simulated exposure logs. No live A/B claim.</span></div>
+  <div class="status-card"><b>Main risk</b><span>Causal claims need real randomized traffic, which is not here.</span></div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 def metric_value(df: pd.DataFrame, column: str, default: float = 0.0) -> float:
@@ -181,7 +249,7 @@ with st.sidebar:
             "Limitations",
         ],
     )
-    st.caption("Standalone System B demo")
+    st.caption("Offline policy lab")
     st.divider()
     st.caption("Run pipeline")
     st.code("python scripts/run_system_b_pipeline.py", language="powershell")
@@ -189,12 +257,14 @@ with st.sidebar:
 st.markdown(
     """
 <div class="hero">
+  <div class="topline">System B / Fair content ranking</div>
   <h1>Fair Content Ranking System</h1>
-  <p>A compact platform-side ranking demo for finding underexposed content, comparing exploration policies, and checking whether exposure becomes too concentrated.</p>
+  <p>Offline policy lab for deciding which underexposed items should receive measured exploration traffic.</p>
 </div>
 """,
     unsafe_allow_html=True,
 )
+render_status_strip()
 
 if promotion.empty:
     st.error("System B artifacts not found. Run: python scripts/run_system_b_pipeline.py")
@@ -204,7 +274,7 @@ if section == "Overview":
     st.markdown(
         f"""
 <div class="section-note">
-This project studies the ranking problem after a recommender has produced candidates: which items should receive controlled exploration traffic? It uses {term('Bayesian shrinkage', 'Pulls low-sample item rates toward a prior so noisy early results do not dominate.')}, {term('uplift scoring', 'Estimates whether extra exposure is expected to increase reward.')}, bandit comparisons, and offline policy checks.
+This view starts after a recommender has produced candidates. The question is how to spend exploration traffic without giving it all to already popular items. It uses {term('Bayesian shrinkage', 'Pulls low-sample item rates toward a prior so noisy early results do not dominate.')}, {term('uplift scoring', 'Estimates whether extra exposure is expected to increase reward.')}, bandit comparisons, and offline policy checks.
 </div>
 """,
         unsafe_allow_html=True,
@@ -237,7 +307,7 @@ This project studies the ranking problem after a recommender has produced candid
         st.markdown(
             """
 <div class="warning-note">
-These are simulation-backed metrics. They show whether the offline workflow is coherent; they are not production impact numbers.
+These metrics check whether the offline workflow is coherent. They are not production impact numbers.
 </div>
 """,
             unsafe_allow_html=True,
@@ -271,7 +341,7 @@ elif section == "Methods":
 """,
         unsafe_allow_html=True,
     )
-    st.subheader("How to read the system")
+    st.subheader("How to read it")
     st.markdown(
         """
 1. Start with the ablation table. It shows whether the full scoring policy changes the candidate set compared with popularity.
@@ -285,7 +355,7 @@ elif section == "Opportunity Explorer":
     st.markdown(
         f"""
 <div class="section-note">
-The scatter plot separates {term('shrunk quality', 'Observed quality after Beta-Binomial correction for sample size.')} from {term('uplift', 'Estimated incremental reward from extra exposure.')}. Larger points have more uncertainty, so they may need exploration rather than immediate heavy ranking.
+The scatter plot separates {term('shrunk quality', 'Observed quality after Beta-Binomial correction for sample size.')} from {term('uplift', 'Estimated incremental reward from extra exposure.')}. Larger points are more uncertain, so they need measurement before heavy ranking.
 </div>
 """,
         unsafe_allow_html=True,
@@ -331,7 +401,7 @@ elif section == "Policy Comparison":
     st.markdown(
         f"""
 <div class="section-note">
-A useful policy needs more than reward. It should keep {term('regret', 'Reward lost compared with the best available arm in the simulation.')} controlled while exposing more than the same few items.
+A policy needs more than reward. It should keep {term('regret', 'Reward lost compared with the best available arm in the simulation.')} controlled while exposing more than the same few items.
 </div>
 """,
         unsafe_allow_html=True,
@@ -415,7 +485,7 @@ elif section == "Limitations":
     st.markdown(
         """
 <div class="warning-note">
-This project is useful as an offline ranking and evaluation design, but it does not prove production lift. The exposure data is simulated, and the uplift estimates are not causal proof without randomized treatment assignment.
+This is an offline ranking and evaluation design. It does not prove production lift. The exposure data is simulated, and the uplift estimates are not causal proof without randomized treatment assignment.
 </div>
 """,
         unsafe_allow_html=True,
@@ -446,7 +516,7 @@ This project is useful as an offline ranking and evaluation design, but it does 
 st.markdown(
     """
 <div class="footer-note">
-Review note: this demo should be evaluated as an offline policy-design system. Its strongest parts are shrinkage, explicit policy comparison, concentration metrics, and IPS stress testing. Its weakest assumption is simulated exposure data.
+Read this as an offline policy-design system. The strongest parts are shrinkage, policy comparison, concentration metrics, and IPS stress testing. The weakest assumption is simulated exposure data.
 </div>
 """,
     unsafe_allow_html=True,

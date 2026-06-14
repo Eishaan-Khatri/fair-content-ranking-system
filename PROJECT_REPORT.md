@@ -1,115 +1,142 @@
-﻿# Fair Content Ranking System - Project Report
+# Fair Content Ranking System - Project Report
 
 ## Problem
 
-Most recommender demos optimize for immediate engagement. That creates a second problem: popular items keep receiving impressions, while uncertain or niche items do not get enough exposure to prove whether they are useful. This project models that platform-side ranking problem.
+Standard recommendation demos usually optimize for immediate engagement. That
+creates a measurement problem. Popular items keep getting impressions, while
+uncertain niche items do not receive enough traffic to prove whether they are
+good.
 
-The goal is not to replace a personalized recommender. The goal is to decide which underexposed content deserves controlled exploration traffic while keeping quality and measurement risk visible.
+This project models that platform-side decision. It does not replace a personal
+recommender. It decides which underexposed items should get controlled
+exploration traffic while keeping quality, uncertainty, and policy risk visible.
 
-## System Position
+## Position In The Portfolio
 
-This repository is System B. It is designed to sit after a recommender system such as System A.
+This repository is System B.
 
-- System A ranks content for a reader.
-- System B audits the candidate pool and decides where exploration traffic should go.
-- The systems stay in separate repositories. System B imports System A artifacts through `scripts/import_system_a_artifacts.py`.
+- System A retrieves and ranks content for a reader.
+- System B audits the candidate pool and allocates exploration traffic.
+- System B can import System A artifacts through `scripts/import_system_a_artifacts.py`.
 
 ## Methods
 
 ### 1. Exposure Simulation
 
-The project builds a logged exposure table with known propensities. This is required for off-policy evaluation. Each row contains impression, click, completion, return, treatment, reward, and logging propensity.
+The project creates a logged exposure table with known propensities. Each row
+contains an impression, click, completion, return signal, treatment flag,
+reward, and logging propensity.
 
-Why it matters: without logged propensities, IPS-style evaluation is not valid.
+This matters because IPS-style evaluation is not valid without known logging
+propensities.
 
 ### 2. Bayesian Shrinkage
 
-Raw CTR or completion rate is unreliable for low-impression items. The project uses Beta-Binomial shrinkage so small-sample items move toward a genre-level prior while higher-sample items rely more on observed behavior.
+Raw CTR or completion rate is noisy for low-impression items. The project uses
+Beta-Binomial shrinkage so small-sample items move toward a genre prior while
+mature items rely more on observed behavior.
 
-Why it matters: it prevents a tiny-sample item from becoming top-ranked only because it had a few lucky early outcomes.
+This prevents a tiny-sample item from ranking highly only because of a few lucky
+early outcomes.
 
 ### 3. Breakout Forecasting
 
-A supervised model predicts which items are likely to become high-performing after more exposure. The feature builder separates early-window features from future-window labels to avoid label leakage.
+A supervised model predicts which items may perform well after more exposure.
+Feature generation separates early-window features from future-window labels to
+avoid leakage.
 
-Why it matters: it tests whether the platform can find future upside, not only explain past popularity.
+This tests future upside instead of only explaining existing popularity.
 
 ### 4. Uplift Scoring
 
-A T-learner estimates whether extra exploration exposure is likely to improve reward. This separates generally good items from items that specifically benefit from more exposure.
-
-Why it matters: promotion traffic is limited, so it should go to items with expected incremental value.
+A T-learner estimates whether extra exposure is likely to increase reward. This
+separates generally good items from items that specifically benefit from
+promotion traffic.
 
 ### 5. Uncertainty-Aware Promotion
 
-The final promotion score combines shrunk quality, breakout probability, uplift, and uncertainty while enforcing a relevance floor.
+The final score combines shrunk quality, breakout probability, uplift, and
+uncertainty while enforcing a relevance floor.
 
-Why it matters: exploration should not become random traffic allocation. It should be uncertain but still plausibly relevant.
+Exploration should be uncertain, but not random.
 
 ### 6. Bandit Policy Comparison
 
-The project compares popularity, epsilon-greedy, UCB1, and Thompson Sampling on cumulative reward, regret, and exploration breadth.
+The project compares popularity, epsilon-greedy, UCB1, and Thompson Sampling on
+cumulative reward, regret, and number of unique items exposed.
 
-Why it matters: it shows the tradeoff between exploitation and discovery.
+### 7. Concentration Metrics
 
-### 7. Fairness and Concentration Metrics
+The project computes creator exposure Gini, HHI, active creators, long-tail
+viability, and a relevance-vs-concentration frontier.
 
-The project computes creator exposure Gini, HHI, active creators, long-tail viability, and a relevance-vs-fairness Pareto frontier.
-
-Why it matters: a platform ranking system should be judged not only by reward, but also by whether exposure collapses into a small set of creators.
+Reward alone is not enough. The system also checks whether exposure collapses
+into a small creator set.
 
 ### 8. Offline Policy Evaluation
 
-The project reports IPS, clipped IPS, SNIPS, and doubly robust estimates under policy-distance stress tests.
+The project reports IPS, clipped IPS, SNIPS, and doubly robust estimates under
+policy-distance stress tests.
 
-Why it matters: offline policy evaluation becomes unstable when the target policy is too far from the logging policy. The dashboard exposes this instead of hiding it.
+These estimates become unstable when the target policy moves too far from the
+logging policy. The dashboard exposes that risk.
 
 ## Current Evidence
 
-Current generated artifacts are stored in `data/processed/system_b/`. The report is generated with:
+Artifacts are stored under:
+
+```text
+data/processed/system_b/
+```
+
+Generate the report with:
 
 ```powershell
 python scripts/final_system_b_report.py
 ```
 
-The dashboard is launched with:
+Launch the dashboard with:
 
 ```powershell
 streamlit run dashboards/system_b_demo/app.py
 ```
 
-The most important evidence to inspect is:
+Files worth checking:
 
-- `promotion_scores.parquet`: final item-level ranking inputs and promotion score.
-- `ablation_comparison.parquet`: comparison of popularity-only, shrinkage-only, breakout-only, uplift-only, and full promotion scoring.
-- `bandit_policy_metrics.parquet`: cumulative reward, regret, and exploration breadth.
-- `fairness_metrics.parquet`: exposure concentration over time.
-- `ips_stress_test.parquet`: off-policy estimate stability.
+- `promotion_scores.parquet`
+- `ablation_comparison.parquet`
+- `bandit_policy_metrics.parquet`
+- `fairness_metrics.parquet`
+- `ips_stress_test.parquet`
 
-## What This Project Proves
+## What It Shows
 
-It shows a full offline workflow for opportunity-aware content ranking:
+The repo demonstrates a complete offline workflow:
 
 1. build logged exposure data,
 2. reduce small-sample noise,
 3. predict breakout candidates,
 4. estimate exposure uplift,
 5. compare exploration policies,
-6. audit fairness and concentration,
+6. audit exposure concentration,
 7. stress-test off-policy estimates.
 
-## What It Does Not Prove
+## What It Does Not Show
 
-This is not production causal evidence. The exposure log is simulated. The uplift model is a design demonstration, not a real randomized experiment. The final policy would need live A/B testing or a randomized exploration bucket before any production claim.
+This is not production causal evidence. The exposure log is simulated. The
+uplift model is a design test, not a randomized experiment. Any production claim
+would need real logged propensities, randomized exploration, and A/B testing.
 
-## Limitations
+## Limits
 
 - Exposure data is simulated.
-- User outcomes are generated from controlled assumptions.
-- IPS is valid only when logging propensities are known and policy overlap is sufficient.
-- Uplift estimates are not causal proof without randomized or quasi-random treatment assignment.
-- Real-world deployment would need guardrails for creator spam, content safety, cold-start abuse, and repeated exposure fatigue.
+- User outcomes come from controlled assumptions.
+- IPS needs known propensities and enough policy overlap.
+- Uplift estimates are not causal proof without randomized treatment assignment.
+- A real system would need safety, spam, abuse, fatigue, and repeated-exposure guardrails.
 
-## Next Improvements
+## Next Work
 
-The highest-value next step is not adding more models. It is replacing the simulated exposure log with real logged impressions and known propensities. After that, the project can support stronger causal claims.
+The strongest next step is not adding more model types. It is replacing the
+simulated exposure log with real impressions and known propensities. That is the
+change that would make stronger causal claims possible.

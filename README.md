@@ -1,22 +1,25 @@
-﻿# Fair Content Ranking System
+# Fair Content Ranking System
 
-A small platform-side ranking project for underexposed content discovery.
+Offline ranking lab for giving underexposed content measured exploration traffic.
 
-This repo is System B from the Narrative Intelligence portfolio. It is separate from the personalized recommender repo. System A answers: "what should this reader see?" System B answers: "which underexposed items deserve controlled exploration traffic, and can we evaluate that policy safely offline?"
+This is System B from the Narrative Intelligence work. It is separate from the
+personalized recommender. System A asks what a reader should see. System B asks
+which underexposed items are worth testing, how risky that test is, and whether
+the policy can be evaluated from logged data.
 
-## What It Builds
+## What Is Built
 
-- Simulated exposure logs with known logging propensities.
+- Exposure-log simulator with known logging propensities.
 - Bayesian quality shrinkage for low-sample items.
 - Breakout prediction from early exposure signals.
-- Uplift scoring for exploration value.
-- Uncertainty-aware promotion ranking.
-- Bandit policy comparison.
-- Creator exposure fairness metrics.
-- IPS/SNIPS/doubly robust policy stress tests.
-- Streamlit dashboard for review/demo.
+- Uplift scoring for items that may benefit from more exposure.
+- Promotion score with uncertainty and relevance checks.
+- Bandit comparison for reward, regret, and exploration breadth.
+- Creator exposure concentration metrics.
+- IPS, SNIPS, clipped IPS, and doubly robust stress tests.
+- Streamlit dashboard for reviewing the artifacts.
 
-## Quick Start
+## Run
 
 ```powershell
 pip install -r requirements.txt
@@ -25,7 +28,7 @@ python scripts/final_system_b_report.py
 streamlit run dashboards/system_b_demo/app.py
 ```
 
-The dashboard uses the generated artifacts under:
+Generated artifacts are written to:
 
 ```text
 data/processed/system_b/
@@ -33,7 +36,7 @@ data/processed/system_b/
 
 ## Use With System A
 
-Keep System A and System B as separate repositories. To import System A artifacts into this repo:
+System B can run alone from its sample artifacts. To import System A outputs:
 
 ```powershell
 python scripts/import_system_a_artifacts.py --system-a-path D:\Projects\narrative-intelligence-platform
@@ -41,26 +44,32 @@ python scripts/run_system_b_pipeline.py
 python scripts/final_system_b_report.py
 ```
 
-Required System A artifacts:
+Required System A files:
 
 - `data/processed/item_fingerprints.parquet`
 - `data/processed/quality_scores.parquet`
 - `data/processed/session_features.parquet`
 
-Optional:
+Optional files:
 
 - `data/processed/item_embeddings.parquet`
 - `data/synthetic/catalog.parquet`
 
-## Streamlit Cloud
+## Dashboard
 
-Use this app entrypoint:
+Streamlit entrypoint:
 
 ```text
 dashboards/system_b_demo/app.py
 ```
 
-The repo includes `.streamlit/config.toml` and sample processed artifacts, so the app can open without running training first.
+The app reads the processed artifacts and shows:
+
+- top underexposed candidates,
+- policy comparison,
+- creator exposure concentration,
+- off-policy estimate stability,
+- current limitations.
 
 ## Reports
 
@@ -70,9 +79,12 @@ python scripts/final_system_b_report.py
 
 Main report files:
 
-- `PROJECT_REPORT.md`: hand-written project explanation.
-- `reports/system_b_final_report.md`: generated summary from current artifacts.
+- `PROJECT_REPORT.md`: project explanation.
+- `reports/system_b_final_report.md`: generated report from current artifacts.
 
-## Important Limitation
+## Limit
 
-This project uses simulated exposure data. It demonstrates the offline ranking and policy-evaluation workflow, but it does not prove real production lift. Real deployment would need logged propensities from actual traffic, randomized exploration buckets, and A/B testing.
+The exposure data is simulated. This project shows the offline ranking and
+evaluation workflow, but it does not prove production lift. A real deployment
+would need logged propensities from traffic, randomized exploration buckets, and
+an A/B test.
