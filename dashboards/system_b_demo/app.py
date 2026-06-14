@@ -228,7 +228,7 @@ This project studies the ranking problem after a recommender has produced candid
             title="Top promotion candidates",
             hover_data=[c for c in ["title", "creator_id", "shrunk_mean", "breakout_score", "uplift_score"] if c in top.columns],
         )
-        st.plotly_chart(configure_fig(fig), use_container_width=True)
+        st.plotly_chart(configure_fig(fig), width="stretch")
     with right:
         metrics = summary.get("breakout_metrics", {})
         st.subheader("Model snapshot")
@@ -253,7 +253,7 @@ These are simulation-backed metrics. They show whether the offline workflow is c
             "unique_creators",
             "creator_gini",
         ]].copy()
-        st.dataframe(show, use_container_width=True, hide_index=True)
+        st.dataframe(show, width="stretch", hide_index=True)
     else:
         st.warning("Ablation artifact missing. Re-run the pipeline to generate ablation_comparison.parquet.")
 
@@ -312,7 +312,7 @@ The scatter plot separates {term('shrunk quality', 'Observed quality after Beta-
         hover_data=[c for c in ["item_id", "title", "creator_id", "promotion_score", "breakout_score"] if c in view.columns],
         title="Quality vs uplift, sized by uncertainty",
     )
-    st.plotly_chart(configure_fig(fig), use_container_width=True)
+    st.plotly_chart(configure_fig(fig), width="stretch")
     table_cols = [
         "item_id",
         "title",
@@ -325,7 +325,7 @@ The scatter plot separates {term('shrunk quality', 'Observed quality after Beta-
         "posterior_uncertainty",
         "popularity_percentile",
     ]
-    st.dataframe(view[[c for c in table_cols if c in view.columns]], use_container_width=True, hide_index=True)
+    st.dataframe(view[[c for c in table_cols if c in view.columns]], width="stretch", hide_index=True)
 
 elif section == "Policy Comparison":
     st.markdown(
@@ -343,13 +343,13 @@ A useful policy needs more than reward. It should keep {term('regret', 'Reward l
         c1, c2 = st.columns(2)
         with c1:
             fig = px.line(bandit, x="round", y="cumulative_reward", color="policy", title="Cumulative reward")
-            st.plotly_chart(configure_fig(fig), use_container_width=True)
+            st.plotly_chart(configure_fig(fig), width="stretch")
         with c2:
             fig = px.line(bandit, x="round", y="cumulative_regret", color="policy", title="Cumulative regret")
-            st.plotly_chart(configure_fig(fig), use_container_width=True)
+            st.plotly_chart(configure_fig(fig), width="stretch")
         fig = px.bar(final, x="policy", y="unique_items_exposed", color="policy", title="Exploration breadth at final round")
-        st.plotly_chart(configure_fig(fig), use_container_width=True)
-        st.dataframe(final, use_container_width=True, hide_index=True)
+        st.plotly_chart(configure_fig(fig), width="stretch")
+        st.dataframe(final, width="stretch", hide_index=True)
 
 elif section == "Fairness":
     st.markdown(
@@ -366,10 +366,10 @@ elif section == "Fairness":
         c1, c2 = st.columns(2)
         with c1:
             fig = px.line(fairness, x="day", y="gini", color="policy", title="Creator exposure Gini over time")
-            st.plotly_chart(configure_fig(fig), use_container_width=True)
+            st.plotly_chart(configure_fig(fig), width="stretch")
         with c2:
             fig = px.line(fairness, x="day", y="active_creators", color="policy", title="Active creators over time")
-            st.plotly_chart(configure_fig(fig), use_container_width=True)
+            st.plotly_chart(configure_fig(fig), width="stretch")
         fig = px.scatter(
             frontier,
             x="gini",
@@ -379,8 +379,8 @@ elif section == "Fairness":
             hover_data=["lambda_novelty", "lambda_fairness", "hhi"],
             title="Pareto frontier: relevance vs exposure concentration",
         )
-        st.plotly_chart(configure_fig(fig), use_container_width=True)
-        st.dataframe(frontier, use_container_width=True, hide_index=True)
+        st.plotly_chart(configure_fig(fig), width="stretch")
+        st.dataframe(frontier, width="stretch", hide_index=True)
 
 elif section == "IPS Stress Test":
     st.markdown(
@@ -403,13 +403,13 @@ elif section == "IPS Stress Test":
                 barmode="group",
                 title="Off-policy value estimates",
             )
-            st.plotly_chart(configure_fig(fig), use_container_width=True)
+            st.plotly_chart(configure_fig(fig), width="stretch")
         with c2:
             fig = px.bar(ips, x="target_policy", y="effective_sample_size", color="target_policy", title="Effective sample size")
-            st.plotly_chart(configure_fig(fig), use_container_width=True)
+            st.plotly_chart(configure_fig(fig), width="stretch")
         fig = px.bar(ips, x="target_policy", y="p95_weight", color="target_policy", title="p95 importance weight")
-        st.plotly_chart(configure_fig(fig), use_container_width=True)
-        st.dataframe(ips, use_container_width=True, hide_index=True)
+        st.plotly_chart(configure_fig(fig), width="stretch")
+        st.dataframe(ips, width="stretch", hide_index=True)
 
 elif section == "Limitations":
     st.markdown(
@@ -451,4 +451,5 @@ Review note: this demo should be evaluated as an offline policy-design system. I
 """,
     unsafe_allow_html=True,
 )
+
 
