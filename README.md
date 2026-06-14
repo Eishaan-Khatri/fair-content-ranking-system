@@ -1,23 +1,66 @@
 # Fair Content Ranking System
 
-Offline ranking lab for giving underexposed content measured exploration traffic.
+This project is System B: a ranking lab for underexposed content.
 
-This is System B from the Narrative Intelligence work. It is separate from the
-personalized recommender. System A asks what a reader should see. System B asks
-which underexposed items are worth testing, how risky that test is, and whether
-the policy can be evaluated from logged data.
+Think of a content platform with thousands of stories. Popular stories keep
+getting shown because the platform already has data for them. New or niche
+stories may be good, but they never get enough impressions to prove it.
 
-## What Is Built
+This repo tests a simple question:
 
-- Exposure-log simulator with known logging propensities.
-- Bayesian quality shrinkage for low-sample items.
-- Breakout prediction from early exposure signals.
-- Uplift scoring for items that may benefit from more exposure.
-- Promotion score with uncertainty and relevance checks.
-- Bandit comparison for reward, regret, and exploration breadth.
-- Creator exposure concentration metrics.
-- IPS, SNIPS, clipped IPS, and doubly robust stress tests.
-- Streamlit dashboard for reviewing the artifacts.
+```text
+Which underexposed items deserve measured exploration traffic?
+```
+
+Related project: System A is kept in a separate repository.
+
+## What This Project Does
+
+- Builds a logged exposure table with known propensities.
+- Shrinks noisy item-quality rates with a Beta-Binomial model.
+- Predicts breakout candidates from early exposure features.
+- Estimates uplift from extra exposure.
+- Builds a promotion score with quality, uplift, uncertainty, and relevance.
+- Compares bandit policies such as epsilon-greedy, UCB1, and Thompson sampling.
+- Measures creator exposure concentration with Gini and HHI.
+- Runs IPS, SNIPS, clipped IPS, and doubly robust checks.
+- Shows the outputs in a Streamlit dashboard.
+
+## The Main Idea
+
+Raw popularity is a bad guide for discovery.
+
+Imagine two stories:
+
+- Story A has 50,000 impressions and a stable completion rate.
+- Story B has 20 impressions and 8 completions.
+
+Story B may be promising, but the sample is tiny. Ranking it too high would be
+risky. Ignoring it forever would also be wrong. This project gives that kind of
+item a measured test instead of guessing.
+
+## How The Pipeline Works
+
+```text
+1. Exposure log
+   Creates impressions, rewards, treatment flags, and logging propensities.
+
+2. Quality shrinkage
+   Pulls tiny-sample rates toward a prior so lucky early results do not dominate.
+
+3. Breakout model
+   Predicts whether an item may perform better after more exposure.
+
+4. Uplift model
+   Estimates whether extra exposure is likely to improve reward.
+
+5. Promotion policy
+   Combines quality, uplift, uncertainty, and a relevance floor.
+
+6. Policy checks
+   Compares reward, regret, exploration breadth, exposure concentration, and
+   off-policy estimate stability.
+```
 
 ## Run
 
@@ -28,63 +71,61 @@ python scripts/final_system_b_report.py
 streamlit run dashboards/system_b_demo/app.py
 ```
 
-Generated artifacts are written to:
+Generated files are written to:
 
 ```text
 data/processed/system_b/
+reports/system_b_final_report.md
 ```
-
-## Use With System A
-
-System B can run alone from its sample artifacts. To import System A outputs:
-
-```powershell
-python scripts/import_system_a_artifacts.py --system-a-path D:\Projects\narrative-intelligence-platform
-python scripts/run_system_b_pipeline.py
-python scripts/final_system_b_report.py
-```
-
-Required System A files:
-
-- `data/processed/item_fingerprints.parquet`
-- `data/processed/quality_scores.parquet`
-- `data/processed/session_features.parquet`
-
-Optional files:
-
-- `data/processed/item_embeddings.parquet`
-- `data/synthetic/catalog.parquet`
 
 ## Dashboard
 
-Streamlit entrypoint:
+```powershell
+streamlit run dashboards/system_b_demo/app.py
+```
+
+The dashboard shows:
+
+- top promotion candidates,
+- score ablation,
+- policy reward and regret,
+- exploration breadth,
+- creator concentration,
+- IPS stress-test results,
+- current limits.
+
+## Important Files
 
 ```text
-dashboards/system_b_demo/app.py
+system_b_opportunity_lab/exposure_simulation/
+  Builds exposure logs with propensities.
+
+system_b_opportunity_lab/bayesian_shrinkage/
+  Reduces noise in low-sample item quality.
+
+system_b_opportunity_lab/breakout_forecasting/
+  Predicts future upside from early item signals.
+
+system_b_opportunity_lab/uplift_scoring/
+  Estimates incremental reward from exposure.
+
+system_b_opportunity_lab/uncertainty_promotion/
+  Builds the final promotion score.
+
+system_b_opportunity_lab/bandit_exploration/
+  Compares exploration policies.
+
+system_b_opportunity_lab/fairness/
+  Measures exposure concentration.
+
+system_b_opportunity_lab/offline_eval/
+  Runs IPS, SNIPS, clipped IPS, and doubly robust checks.
 ```
 
-The app reads the processed artifacts and shows:
+## Limits
 
-- top underexposed candidates,
-- policy comparison,
-- creator exposure concentration,
-- off-policy estimate stability,
-- current limitations.
-
-## Reports
-
-```powershell
-python scripts/final_system_b_report.py
-```
-
-Main report files:
-
-- `PROJECT_REPORT.md`: project explanation.
-- `reports/system_b_final_report.md`: generated report from current artifacts.
-
-## Limit
-
-The exposure data is simulated. This project shows the offline ranking and
-evaluation workflow, but it does not prove production lift. A real deployment
-would need logged propensities from traffic, randomized exploration buckets, and
-an A/B test.
+- The exposure log is simulated.
+- The uplift score is not causal proof.
+- IPS needs known propensities and enough overlap between policies.
+- The project does not model spam, safety, fatigue, or creator gaming.
+- A real launch would need randomized exploration traffic and an A/B test.

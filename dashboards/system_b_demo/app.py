@@ -189,9 +189,9 @@ def render_status_strip() -> None:
         """
 <div class="status-strip">
   <div class="status-card"><b>Question</b><span>Which underexposed items should get measured exploration traffic?</span></div>
-  <div class="status-card"><b>Evidence</b><span>Shrinkage, ablation, bandit, concentration, and IPS tables.</span></div>
-  <div class="status-card"><b>Data</b><span>Simulated exposure logs. No live A/B claim.</span></div>
-  <div class="status-card"><b>Main risk</b><span>Causal claims need real randomized traffic, which is not here.</span></div>
+  <div class="status-card"><b>Checks</b><span>Shrinkage, ablation, bandit, concentration, and IPS tables.</span></div>
+  <div class="status-card"><b>Data</b><span>Simulated exposure logs.</span></div>
+  <div class="status-card"><b>Limit</b><span>A real rollout needs randomized traffic.</span></div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -307,7 +307,7 @@ This view starts after a recommender has produced candidates. The question is ho
         st.markdown(
             """
 <div class="warning-note">
-These metrics check whether the offline workflow is coherent. They are not production impact numbers.
+These metrics check whether the tables and policies behave as expected. They are not live traffic results.
 </div>
 """,
             unsafe_allow_html=True,
@@ -516,7 +516,7 @@ This is an offline ranking and evaluation design. It does not prove production l
 st.markdown(
     """
 <div class="footer-note">
-Read this as an offline policy-design system. The strongest parts are shrinkage, policy comparison, concentration metrics, and IPS stress testing. The weakest assumption is simulated exposure data.
+This dashboard uses simulated exposure logs. Main checks: shrinkage, policy comparison, concentration, and IPS stress testing.
 </div>
 """,
     unsafe_allow_html=True,

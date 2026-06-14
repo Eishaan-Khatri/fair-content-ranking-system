@@ -2,141 +2,118 @@
 
 ## Problem
 
-Standard recommendation demos usually optimize for immediate engagement. That
-creates a measurement problem. Popular items keep getting impressions, while
-uncertain niche items do not receive enough traffic to prove whether they are
-good.
+Most recommendation systems learn fastest from items that already get traffic.
+That creates a loop. Popular items get more impressions, so the platform gets
+more data about them. New or niche items get fewer impressions, so the platform
+stays unsure about them.
 
-This project models that platform-side decision. It does not replace a personal
-recommender. It decides which underexposed items should get controlled
-exploration traffic while keeping quality, uncertainty, and policy risk visible.
+This project works on that second problem. It asks which underexposed items
+should get a small, measured amount of traffic so the platform can learn more
+about them.
 
-## Position In The Portfolio
+## Where This Fits
 
-This repository is System B.
+This repo is System B. System A is a separate companion project.
 
-- System A retrieves and ranks content for a reader.
-- System B audits the candidate pool and allocates exploration traffic.
-- System B can import System A artifacts through `scripts/import_system_a_artifacts.py`.
+## Method
 
-## Methods
+### 1. Exposure Log
 
-### 1. Exposure Simulation
+The pipeline creates a table of impressions, clicks, completions, returns,
+treatments, rewards, and logging propensities.
 
-The project creates a logged exposure table with known propensities. Each row
-contains an impression, click, completion, return signal, treatment flag,
-reward, and logging propensity.
-
-This matters because IPS-style evaluation is not valid without known logging
-propensities.
+The propensity column matters. It tells us how likely the old logging policy was
+to show an item. Without that, IPS-style checks are not reliable.
 
 ### 2. Bayesian Shrinkage
 
-Raw CTR or completion rate is noisy for low-impression items. The project uses
-Beta-Binomial shrinkage so small-sample items move toward a genre prior while
-mature items rely more on observed behavior.
+Raw rates are noisy when an item has only a few impressions. A story with 2
+completions from 3 impressions looks strong, but there is not enough data yet.
 
-This prevents a tiny-sample item from ranking highly only because of a few lucky
-early outcomes.
+The Beta-Binomial shrinkage step pulls tiny-sample rates toward a genre prior.
+Large-sample items stay closer to their observed rate.
 
-### 3. Breakout Forecasting
+### 3. Breakout Model
 
-A supervised model predicts which items may perform well after more exposure.
-Feature generation separates early-window features from future-window labels to
-avoid leakage.
+The breakout model looks at early item signals and predicts which items may do
+well after more exposure. The features come from the early window. The label
+comes from a later window, so the model is not allowed to peek at the answer.
 
-This tests future upside instead of only explaining existing popularity.
+### 4. Uplift Model
 
-### 4. Uplift Scoring
+The uplift model estimates whether extra exposure is likely to improve reward.
+That is different from asking whether an item is already good.
 
-A T-learner estimates whether extra exposure is likely to increase reward. This
-separates generally good items from items that specifically benefit from
-promotion traffic.
+A good item may not need help. A promising underexposed item might.
 
-### 5. Uncertainty-Aware Promotion
+### 5. Promotion Score
 
-The final score combines shrunk quality, breakout probability, uplift, and
-uncertainty while enforcing a relevance floor.
+The final score combines:
 
-Exploration should be uncertain, but not random.
+- shrunk quality,
+- breakout probability,
+- uplift,
+- uncertainty,
+- a minimum relevance check.
 
-### 6. Bandit Policy Comparison
+The score is meant to pick candidates for measured exploration, not to replace
+the whole recommender.
 
-The project compares popularity, epsilon-greedy, UCB1, and Thompson Sampling on
-cumulative reward, regret, and number of unique items exposed.
+### 6. Bandit Policies
 
-### 7. Concentration Metrics
+The project compares popularity, epsilon-greedy, UCB1, and Thompson Sampling.
+It tracks reward, regret, and how many different items receive exposure.
 
-The project computes creator exposure Gini, HHI, active creators, long-tail
-viability, and a relevance-vs-concentration frontier.
+### 7. Exposure Concentration
 
-Reward alone is not enough. The system also checks whether exposure collapses
-into a small creator set.
+The project measures whether exposure collapses into a small set of creators.
+It uses Gini, HHI, active creator count, long-tail viability, and a
+relevance-vs-concentration frontier.
 
-### 8. Offline Policy Evaluation
+### 8. Off-Policy Checks
 
-The project reports IPS, clipped IPS, SNIPS, and doubly robust estimates under
-policy-distance stress tests.
+The project runs IPS, clipped IPS, SNIPS, and doubly robust checks. These checks
+get weaker when the target policy is too different from the policy that created
+the log.
 
-These estimates become unstable when the target policy moves too far from the
-logging policy. The dashboard exposes that risk.
-
-## Current Evidence
-
-Artifacts are stored under:
+## Files To Inspect
 
 ```text
-data/processed/system_b/
+data/processed/system_b/promotion_scores.parquet
+data/processed/system_b/ablation_comparison.parquet
+data/processed/system_b/bandit_policy_metrics.parquet
+data/processed/system_b/fairness_metrics.parquet
+data/processed/system_b/ips_stress_test.parquet
+reports/system_b_final_report.md
 ```
 
-Generate the report with:
+## Run
 
 ```powershell
+python scripts/run_system_b_pipeline.py
 python scripts/final_system_b_report.py
-```
-
-Launch the dashboard with:
-
-```powershell
 streamlit run dashboards/system_b_demo/app.py
 ```
 
-Files worth checking:
+## What This Shows
 
-- `promotion_scores.parquet`
-- `ablation_comparison.parquet`
-- `bandit_policy_metrics.parquet`
-- `fairness_metrics.parquet`
-- `ips_stress_test.parquet`
+The repo shows a complete offline workflow for exploration ranking:
 
-## What It Shows
-
-The repo demonstrates a complete offline workflow:
-
-1. build logged exposure data,
-2. reduce small-sample noise,
-3. predict breakout candidates,
+1. create logged exposure data,
+2. reduce tiny-sample noise,
+3. find possible breakout items,
 4. estimate exposure uplift,
 5. compare exploration policies,
-6. audit exposure concentration,
-7. stress-test off-policy estimates.
-
-## What It Does Not Show
-
-This is not production causal evidence. The exposure log is simulated. The
-uplift model is a design test, not a randomized experiment. Any production claim
-would need real logged propensities, randomized exploration, and A/B testing.
+6. check exposure concentration,
+7. test off-policy estimate stability.
 
 ## Limits
 
-- Exposure data is simulated.
-- User outcomes come from controlled assumptions.
+- The exposure log is simulated.
+- Uplift is not causal proof.
 - IPS needs known propensities and enough policy overlap.
-- Uplift estimates are not causal proof without randomized treatment assignment.
-- A real system would need safety, spam, abuse, fatigue, and repeated-exposure guardrails.
+- The project does not model spam, safety, repeated-exposure fatigue, or creator gaming.
+- A real launch would need randomized exploration traffic and an A/B test.
 
-## Next Work
-
-The strongest next step is not adding more model types. It is replacing the
-simulated exposure log with real impressions and known propensities. That is the
-change that would make stronger causal claims possible.
+The next serious step is to replace the simulated exposure log with real
+impression logs that include propensities.
